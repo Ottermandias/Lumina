@@ -14,7 +14,7 @@ namespace Lumina.Models.Models
             var idx = 0;
             foreach( var shapeMeshStruct in file.ShapeMeshes ) {
                 var values = Enumerable.Range( (int)shapeMeshStruct.ShapeValueOffset, (int) shapeMeshStruct.ShapeValueCount )
-                   .Select( i => (Offset: file.ShapeValues[ i ].BaseTriangleIndex, Value: file.ShapeValues[i].ReplacedTriangleIndex))
+                   .Select( i => (Offset: file.ShapeValues[ i ].BaseIndicesIndex, Value: file.ShapeValues[i].ReplacingVertexIndex))
                    .ToArray();
                 ret[idx++] = new ShapeMesh {
                     MeshIndex = shapeMeshStruct.MeshIndexOffset,
