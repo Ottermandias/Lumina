@@ -138,7 +138,7 @@ namespace Lumina.Models.Models
             Shapes = new Dictionary< string, Shape >();
             for( int i = 0; i < File?.Shapes.Length; i++ )
             {
-                var shape = new Shape( this, shapeMeshes, i );
+                var shape = new Shape( this, Lod, shapeMeshes, i );
                 Shapes[ shape.Name ] = shape;
             }
         }

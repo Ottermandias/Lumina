@@ -5,18 +5,19 @@ using Lumina.Data.Files;
 namespace Lumina.Models.Models
 {
     public struct ShapeMesh {
-        public uint StartIndex;
-        public (ushort Offset, ushort Value)[] Values;
+        public uint MeshIndex;
+        public (ushort BaseTriangleIndex, ushort ReplacedTriangleIndex)[] Values;
 
-        public static IReadOnlyList< ShapeMesh > ConstructList( MdlFile file ) {
+        public static IReadOnlyList< ShapeMesh > ConstructList( MdlFile file ) 
+        {
             var ret = new ShapeMesh[file.ModelHeader.ShapeMeshCount];
             var idx = 0;
             foreach( var shapeMeshStruct in file.ShapeMeshes ) {
                 var values = Enumerable.Range( (int)shapeMeshStruct.ShapeValueOffset, (int) shapeMeshStruct.ShapeValueCount )
-                   .Select( i => (file.ShapeValues[ i ].Offset, file.ShapeValues[i].Value))
+                   .Select( i => (Offset: file.ShapeValues[ i ].BaseTriangleIndex, Value: file.ShapeValues[i].ReplacedTriangleIndex))
                    .ToArray();
                 ret[idx++] = new ShapeMesh {
-                    StartIndex = shapeMeshStruct.StartIndex,
+                    MeshIndex = shapeMeshStruct.MeshIndexOffset,
                     Values = values,
                 };
             }
@@ -26,21 +27,18 @@ namespace Lumina.Models.Models
     }
 
     public class Shape {
-        private const int NumShapeMeshArrays = 3;
         public string Name { get; private set; }
-        public ShapeMesh[][] Meshes { get; private set; } = new ShapeMesh[NumShapeMeshArrays][];
+        public ShapeMesh[] Meshes { get; private set; }
 
-        public Shape(Model model, IReadOnlyList<ShapeMesh> shapeMeshes, int shapeIndex)
+        public Shape(Model model, Model.ModelLod lod, IReadOnlyList<ShapeMesh> shapeMeshes, int shapeIndex)
         {
             var currentShape = model.File.Shapes[ shapeIndex ];
             Name   = model.StringOffsetToStringMap[ (int) currentShape.StringOffset ];
-            for( var i = 0; i < NumShapeMeshArrays; ++i ) {
-                Meshes[ i ] = new ShapeMesh[currentShape.ShapeMeshCount[ i ]];
-                var end    = currentShape.ShapeMeshCount[ i ];
-                var offset = currentShape.ShapeMeshStartIndex[ i ];
-                for( var j = 0; j < end; ++j ) {
-                    Meshes[ i ][ j ] = shapeMeshes[j + offset];
-                }
+            Meshes = new ShapeMesh[currentShape.ShapeMeshCount[ (int) lod ]];
+            var end    = currentShape.ShapeMeshCount[(int)lod];
+            var offset = currentShape.ShapeMeshStartIndex[(int)lod];
+            for( var i = 0; i < end; ++i ) {
+                Meshes[ i ] = shapeMeshes[i + offset];
             }
         }
     }
