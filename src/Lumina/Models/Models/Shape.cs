@@ -5,20 +5,26 @@ using Lumina.Data.Files;
 namespace Lumina.Models.Models
 {
     public struct ShapeMesh {
-        public uint MeshIndexOffset;
-        public (ushort BaseTriangleIndex, ushort ReplacedTriangleIndex)[] Values;
+        public Mesh                                                    AssociatedMesh;
+        public (ushort BaseIndicesIndex, ushort ReplacedVertexIndex)[] Values; 
 
-        public static IReadOnlyList< ShapeMesh > ConstructList( MdlFile file ) 
+        public static IReadOnlyList< ShapeMesh > ConstructList( MdlFile file, IReadOnlyList<Mesh> meshes ) 
         {
             var ret      = new ShapeMesh[file.ModelHeader.ShapeMeshCount];
             var idx      = 0;
+
+            var meshDict = meshes.ToDictionary( m => file.Meshes[ m.MeshIndex ].StartIndex, m => m );
+
             foreach( var shapeMeshStruct in file.ShapeMeshes ) {
+
+                if( !meshDict.TryGetValue( shapeMeshStruct.MeshIndexOffset, out var mesh ) ) continue;
+
                 var values = Enumerable.Range( (int)shapeMeshStruct.ShapeValueOffset, (int) shapeMeshStruct.ShapeValueCount )
-                   .Select( i => (Offset: file.ShapeValues[ i ].BaseIndicesIndex, Value: file.ShapeValues[i].ReplacingVertexIndex))
-                   .ToArray();
+                    .Select( i => ( file.ShapeValues[i].BaseIndicesIndex, file.ShapeValues[i].ReplacingVertexIndex) )
+                    .ToArray();
 
                 ret[idx++] = new ShapeMesh {
-                    MeshIndexOffset = shapeMeshStruct.MeshIndexOffset,
+                    AssociatedMesh = mesh,
                     Values = values,
                 };
             }
